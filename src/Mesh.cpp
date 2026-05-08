@@ -310,13 +310,13 @@ glm::vec3 Mesh::resolveAABB(Mesh* a, Mesh* b) {
 void Mesh::calculatePhysics() {
   if (anchored) return;
   
-  linearVelocity -= glm::vec3(0.0f, 0.1f, 0.0f);
+  linearVelocity -= glm::vec3(0.0f, 0.025f, 0.0f);
 
   glm::vec3 oldPos = position;
 
   glm::vec3 delta = linearVelocity;
 
-  position += linearVelocity;
+  position += linearVelocity * (float)Window::deltaTime;
 
   for (Mesh* other : meshes) {
     if (other == this) continue;

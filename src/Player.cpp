@@ -33,7 +33,7 @@ void Player::updatePlayer(GLFWwindow* window) {
 
   if (!currentPlayer) return;
 
-  float velocity = 0.5f;
+  float velocity = 10.0f * Window::deltaTime;
 
   glm::vec3 forward = Camera::forward;
   glm::vec3 right = Camera::right;
@@ -54,5 +54,5 @@ void Player::updatePlayer(GLFWwindow* window) {
       currentPlayer->position -= right * velocity;
 
   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && currentPlayer->linearVelocity.y == 0)
-      currentPlayer->linearVelocity.y += 1;
+      currentPlayer->linearVelocity.y += 15;
 }

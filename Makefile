@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
 
 TARGET = game
 
-SRC = src/main.cpp src/Window.cpp src/FileLoader.cpp src/Mesh.cpp src/Camera.cpp src/Player.cpp src/glad.c
+SRC = src/stbImpl.cpp src/main.cpp src/Window.cpp src/FileLoader.cpp src/Mesh.cpp src/Camera.cpp src/Player.cpp src/UIElement.cpp src/TextElement.cpp src/Font.cpp src/glad.c
 
 OBJ_DIR = build
 

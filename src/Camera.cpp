@@ -9,7 +9,7 @@ glm::vec3 Camera::right(1.0f, 0.0f, 0.0f);
 
 float Camera::lastX = 400;
 float Camera::lastY = 300;
-float Camera::speed = 0.5f;
+float Camera::speed = 10.0f;
 bool Camera::firstMouse = true;
 
 void Camera::moveCamera(GLFWwindow* window) {
@@ -51,7 +51,7 @@ void Camera::moveCamera(GLFWwindow* window) {
   right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
 
   // movement speed
-  float velocity = speed;
+  float velocity = speed * Window::deltaTime;
 
   if (!Player::currentPlayer) {
     // forward/back
