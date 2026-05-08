@@ -11,7 +11,7 @@ uniform sampler2D texture1;
 uniform bool useTexture;
 
 void main() {
-  float diff = max(dot(normalize(Normal), normalize(lightDir)), 0.0);
+  float diff = max(dot(normalize(Normal), normalize(lightDir)), 0.1);
 
   vec3 baseColor;
 
