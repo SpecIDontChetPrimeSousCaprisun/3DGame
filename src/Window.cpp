@@ -75,7 +75,7 @@ void Window::mainLoop() {
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !spawned) {
       spawned = true;
-      new Mesh("models/Box.obj", glm::vec3(0.0f, 0.0f, 0.0f), Camera::position + (Camera::forward * 2.0f), glm::vec3(0.0f, 0.5f, 1.0f), false);
+      new Mesh("models/Box.obj", "textures/Texture.jpg", glm::vec3(0.0f, 0.0f, 0.0f), Camera::position + (Camera::forward * 2.0f), false);
     } else if (glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS ) {
       spawned = false;
     }

@@ -22,6 +22,8 @@
 class Mesh {
 public:
   Mesh(float* vertices, size_t length, glm::vec3 angularVelocity, glm::vec3 position, glm::vec3 color, bool anchored);
+  Mesh(float* vertices, size_t length, std::string texPath, glm::vec3 angularVelocity, glm::vec3 position, bool anchored);
+  Mesh(std::string path, std::string texPath, glm::vec3 angularVelocity, glm::vec3 position, bool anchored);
   Mesh(std::string path, glm::vec3 angularVelocity, glm::vec3 position, glm::vec3 color, bool anchored);
 
   static std::vector<float> getVerticesFromFile(std::string path);
@@ -37,8 +39,10 @@ private:
   static unsigned int shaderProgram;
 
   glm::vec3 colliderSize, colliderMin, colliderMax;
-  unsigned int VAO, VBO;
+  unsigned int VAO, VBO, texture;
   int vertexCount;
+  bool hasTexture;
+
   bool intersects(Mesh* other);
   void init(float* vertices, size_t length);
   void computeCollider(float* vertices, size_t size);

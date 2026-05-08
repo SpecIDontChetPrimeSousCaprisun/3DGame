@@ -134,12 +134,26 @@ void Mesh::initShader() {
 }
 
 Mesh::Mesh(float* vertices, size_t size, glm::vec3 angularVelocity, glm::vec3 position, glm::vec3 color, bool anchored) 
-  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), position(position), color(color), anchored(anchored) {
+  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), hasTexture(false), position(position), color(color), anchored(anchored) {
+  init(vertices, size);
+}
+
+Mesh::Mesh(float* vertices, size_t size, std::string texPath, glm::vec3 angularVelocity, glm::vec3 position, bool anchored) 
+  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), hasTexture(true), position(position), anchored(anchored), texture(FileLoader::loadTexture(texPath)) {
+  init(vertices, size);
+}
+
+Mesh::Mesh(std::string path, std::string texPath, glm::vec3 angularVelocity, glm::vec3 position, bool anchored) 
+  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), position(position), hasTexture(true), anchored(anchored), texture(FileLoader::loadTexture(texPath)) {
+  std::vector<float> verticesArray = getVerticesFromFile(path);
+  float* vertices = verticesArray.data();
+  size_t size = verticesArray.size() * sizeof(float);
+
   init(vertices, size);
 }
 
 Mesh::Mesh(std::string path, glm::vec3 angularVelocity, glm::vec3 position, glm::vec3 color, bool anchored) 
-  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), position(position), color(color), anchored(anchored) {
+  : angularVelocity(angularVelocity), linearVelocity(glm::vec3(0.0f, 0.0f, 0.0f)), position(position), hasTexture(false), color(color), anchored(anchored) {
   std::vector<float> verticesArray = getVerticesFromFile(path);
   float* vertices = verticesArray.data();
   size_t size = verticesArray.size() * sizeof(float);
@@ -152,41 +166,24 @@ void Mesh::init(float* vertices, size_t size) {
   glGenBuffers(1, &VBO);
 
   glBindVertexArray(VAO);
-
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  glBufferData(
-      GL_ARRAY_BUFFER,
-      size,
-      vertices,
-      GL_STATIC_DRAW
-  );
+  glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
 
-  vertexCount = size / (6 * sizeof(float));
+  // 3 pos + 3 normal + 2 uv = 8 floats per vertex
+  vertexCount = size / (8 * sizeof(float));
 
-  // positions
-  glVertexAttribPointer(
-      0,
-      3,
-      GL_FLOAT,
-      GL_FALSE,
-      6 * sizeof(float),
-      (void*)0
-  );
-
+  // POSITION
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
-  // normals
-  glVertexAttribPointer(
-      1,
-      3,
-      GL_FLOAT,
-      GL_FALSE,
-      6 * sizeof(float),
-      (void*)(3 * sizeof(float))
-  );
-
+  // NORMAL
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+
+  // UV
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
   computeCollider(vertices, size);
 
@@ -194,41 +191,27 @@ void Mesh::init(float* vertices, size_t size) {
 }
 
 void Mesh::computeCollider(float* vertices, size_t size) {
-  if (vertices == nullptr) {
-      std::cout << "vertices is null\n";
-      return;
+  if (vertices == nullptr || size == 0) return;
+
+  if (size % (8 * sizeof(float)) != 0) {
+    std::cout << "invalid vertex buffer size\n";
+    return;
   }
 
-  if (size == 0) {
-      std::cout << "size is 0\n";
-      return;
-  }
-
-  if (size % (6 * sizeof(float)) != 0) {
-      std::cout << "invalid vertex buffer size\n";
-      return;
-  }
-
-  colliderMin = glm::vec3(
-      std::numeric_limits<float>::max()
-  );
-
-  colliderMax = glm::vec3(
-      std::numeric_limits<float>::lowest()
-  );
+  colliderMin = glm::vec3(std::numeric_limits<float>::max());
+  colliderMax = glm::vec3(std::numeric_limits<float>::lowest());
 
   size_t floatCount = size / sizeof(float);
 
-  for (size_t i = 0; i + 2 < floatCount; i += 6)
-  {
-      glm::vec3 vertex(
-          vertices[i],
-          vertices[i + 1],
-          vertices[i + 2]
-      );
+  for (size_t i = 0; i + 2 < floatCount; i += 8) {
+    glm::vec3 v(
+      vertices[i],
+      vertices[i + 1],
+      vertices[i + 2]
+    );
 
-      colliderMin = glm::min(colliderMin, vertex);
-      colliderMax = glm::max(colliderMax, vertex);
+    colliderMin = glm::min(colliderMin, v);
+    colliderMax = glm::max(colliderMax, v);
   }
 
   colliderSize = colliderMax - colliderMin;
@@ -258,20 +241,24 @@ std::vector<float> Mesh::getVerticesFromFile(std::string path) {
     for (unsigned int j = 0; j < face.mNumIndices; j++) {
       unsigned int index = face.mIndices[j];
 
-      if (index >= mesh->mNumVertices) {
-        std::cout << "invalid index\n";
-        continue;
-      }
-
-      // position
+      // POSITION
       vertices.push_back(mesh->mVertices[index].x);
       vertices.push_back(mesh->mVertices[index].y);
       vertices.push_back(mesh->mVertices[index].z);
 
-      // normal
+      // NORMAL
       vertices.push_back(mesh->mNormals[index].x);
       vertices.push_back(mesh->mNormals[index].y);
       vertices.push_back(mesh->mNormals[index].z);
+
+      // UV (SAFE fallback if missing)
+      if (mesh->HasTextureCoords(0)) {
+        vertices.push_back(mesh->mTextureCoords[0][index].x);
+        vertices.push_back(mesh->mTextureCoords[0][index].y);
+      } else {
+        vertices.push_back(0.0f);
+        vertices.push_back(0.0f);
+      }
     }
   }
 
@@ -408,6 +395,22 @@ void Mesh::draw() {
       glGetUniformLocation(shaderProgram, "lightDir"),
       -0.5f, 1.0f, -0.3f
   );
+
+  // ===== TEXTURE =====
+  glUniform1i(
+    glGetUniformLocation(shaderProgram, "useTexture"),
+    hasTexture ? 1 : 0
+  );
+
+  if (hasTexture) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glUniform1i(
+      glGetUniformLocation(shaderProgram, "texture1"),
+      0
+    );
+  }
 
   glUniform3f(
       glGetUniformLocation(shaderProgram, "color"),
