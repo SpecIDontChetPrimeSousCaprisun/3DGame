@@ -143,6 +143,7 @@ void Window::mainLoop() {
     Mesh::calculateAllPhysics();
     Camera::moveCamera(window);
     Player::updatePlayer(window);
+    Mesh::drawAllShadows();
     Mesh::drawAllMeshes();
     UIElement::drawAllElements();
 

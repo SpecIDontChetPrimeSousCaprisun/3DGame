@@ -1,7 +1,92 @@
 #include "Mesh.h"
 
 std::vector<Mesh*> Mesh::meshes;
-unsigned int Mesh::shaderProgram = 0;
+unsigned int Mesh::shaderProgram, Mesh::shadowShaderProgram, Mesh::depthMap, Mesh::depthMapFBO = 0;
+const unsigned int Mesh::SHADOW_WIDTH = 4096;
+const unsigned int Mesh::SHADOW_HEIGHT = 4096;
+glm::mat4 Mesh::lightView, Mesh::lightProjection, Mesh::lightSpaceMatrix;
+glm::vec3 Mesh::lightPos(-50.0f, 50.0f, -50.0f);
+
+void Mesh::drawAllShadows() {
+  // ===== LIGHT SPACE MATRIX (SHADOWS) =====
+  // You should compute this once per frame ideally, but this works for now
+  lightProjection = glm::ortho(
+    -100.0f, 100.0f,
+    -100.0f, 100.0f,
+    1.0f, 200.0f
+  );
+
+  lightView = glm::lookAt(
+      lightPos,
+      glm::vec3(0.0f, 0.0f, 0.0f),
+      glm::vec3(0.0f, 1.0f, 0.0f)
+  );
+
+  lightSpaceMatrix = lightProjection * lightView;
+
+  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+  glClear(GL_DEPTH_BUFFER_BIT);
+  glUseProgram(shadowShaderProgram);
+
+  glPolygonOffset(2.0f, 4.0f);
+  glEnable(GL_POLYGON_OFFSET_FILL);
+
+  glUniformMatrix4fv(
+    glGetUniformLocation(shadowShaderProgram, "lightSpaceMatrix"),
+    1,
+    GL_FALSE,
+    glm::value_ptr(lightSpaceMatrix)
+  );
+
+  for (Mesh* mesh : meshes)
+  {
+    glm::mat4 model = glm::mat4(1.0f);
+
+    model = glm::translate(model, mesh->position);
+
+    /*model = glm::rotate(
+      model,
+      glm::radians(mesh->rotation.x),
+      glm::vec3(1.0f, 0.0f, 0.0f)
+    );
+
+    model = glm::rotate(
+      model,
+      glm::radians(mesh->rotation.y),
+      glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    model = glm::rotate(
+      model,
+      glm::radians(mesh->rotation.z),
+      glm::vec3(0.0f, 0.0f, 1.0f)
+    );
+
+    model = glm::scale(model, mesh->scale);*/
+
+    glUniformMatrix4fv(
+      glGetUniformLocation(shadowShaderProgram, "model"),
+      1,
+      GL_FALSE,
+      glm::value_ptr(model)
+    );
+
+    glBindVertexArray(mesh->VAO);
+
+    glDrawArrays(
+      GL_TRIANGLES,
+      0,
+      mesh->vertexCount
+    );
+  }
+
+  glBindVertexArray(0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+  glViewport(0, 0, Window::fbWidth, Window::fbHeight);
+}
 
 void Mesh::drawAllMeshes() {
   for (Mesh* mesh : meshes) {
@@ -129,6 +214,155 @@ void Mesh::initShader() {
   // cleanup
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
+
+  // shadows
+  vertexCode =
+      FileLoader::loadFile("shaders/shadowVertex.glsl");
+
+  fragmentCode =
+      FileLoader::loadFile("shaders/shadowFragment.glsl");
+
+  vertexShaderSource = vertexCode.c_str();
+  fragmentShaderSource = fragmentCode.c_str();
+
+  // ===== VERTEX SHADER =====
+  vertexShader =
+      glCreateShader(GL_VERTEX_SHADER);
+
+  glShaderSource(
+      vertexShader,
+      1,
+      &vertexShaderSource,
+      NULL
+  );
+
+  glCompileShader(vertexShader);
+
+  glGetShaderiv(
+      vertexShader,
+      GL_COMPILE_STATUS,
+      &success
+  );
+
+  if (!success) {
+      glGetShaderInfoLog(
+          vertexShader,
+          512,
+          NULL,
+          infoLog
+      );
+
+      std::cout
+          << "VERTEX SHADER ERROR:\n"
+          << infoLog
+          << std::endl;
+  }
+
+  // ===== FRAGMENT SHADER =====
+  fragmentShader =
+      glCreateShader(GL_FRAGMENT_SHADER);
+
+  glShaderSource(
+      fragmentShader,
+      1,
+      &fragmentShaderSource,
+      NULL
+  );
+
+  glCompileShader(fragmentShader);
+
+  glGetShaderiv(
+      fragmentShader,
+      GL_COMPILE_STATUS,
+      &success
+  );
+
+  if (!success) {
+      glGetShaderInfoLog(
+          fragmentShader,
+          512,
+          NULL,
+          infoLog
+      );
+
+      std::cout
+          << "FRAGMENT SHADER ERROR:\n"
+          << infoLog
+          << std::endl;
+  }
+
+  // ===== SHADER PROGRAM =====
+  shadowShaderProgram = glCreateProgram();
+
+  glAttachShader(shadowShaderProgram, vertexShader);
+  glAttachShader(shadowShaderProgram, fragmentShader);
+
+  glLinkProgram(shadowShaderProgram);
+
+  glGetProgramiv(
+      shadowShaderProgram,
+      GL_LINK_STATUS,
+      &success
+  );
+
+  if (!success) {
+      glGetProgramInfoLog(
+          shadowShaderProgram,
+          512,
+          NULL,
+          infoLog
+      );
+
+      std::cout
+          << "PROGRAM LINK ERROR:\n"
+          << infoLog
+          << std::endl;
+  }
+
+  // cleanup
+  glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);
+
+  glGenFramebuffers(1, &depthMapFBO);
+
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+
+  glTexImage2D(
+      GL_TEXTURE_2D,
+      0,
+      GL_DEPTH_COMPONENT,
+      SHADOW_WIDTH,
+      SHADOW_HEIGHT,
+      0,
+      GL_DEPTH_COMPONENT,
+      GL_FLOAT,
+      NULL
+  );
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+  float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+  glFramebufferTexture2D(
+      GL_FRAMEBUFFER,
+      GL_DEPTH_ATTACHMENT,
+      GL_TEXTURE_2D,
+      depthMap,
+      0
+  );
+
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   std::cout << "Shader initialized\n";
 }
@@ -338,33 +572,35 @@ void Mesh::draw() {
 
   float time = (float)glfwGetTime();
 
-  // ===== MODEL (object transform) =====
+  // ===== MODEL =====
   glm::mat4 model = glm::mat4(1.0f);
 
-  // local rotation
   model = glm::translate(model, position);
-  if (glm::length(angularVelocity) > 0.0001f) {
-    model = glm::rotate(
-      model,
-      time,
-      glm::normalize(angularVelocity)
-    );
+
+  if (glm::length(angularVelocity) > 0.0001f)
+  {
+      model = glm::rotate(
+          model,
+          time,
+          glm::normalize(angularVelocity)
+      );
   }
 
-  // ===== VIEW (camera) =====
+  // ===== VIEW =====
   glm::mat4 view = glm::lookAt(
       Camera::position,
       Camera::position + Camera::forward,
       glm::vec3(0.0f, 1.0f, 0.0f)
   );
 
+  // ===== PROJECTION =====
   glm::mat4 projection = glm::perspective(
       glm::radians(70.0f),
-      (float)Window::fbWidth / Window::fbHeight,
+      (float)Window::fbWidth / (float)Window::fbHeight,
       0.1f,
       100.0f
-  ); 
- 
+  );
+
   // ===== SEND MATRICES =====
   glUniformMatrix4fv(
       glGetUniformLocation(shaderProgram, "model"),
@@ -387,33 +623,52 @@ void Mesh::draw() {
       glm::value_ptr(projection)
   );
 
+  glUniformMatrix4fv(
+      glGetUniformLocation(shaderProgram, "lightSpaceMatrix"),
+      1,
+      GL_FALSE,
+      glm::value_ptr(lightSpaceMatrix)
+  );
+
   // ===== LIGHT =====
   glUniform3f(
       glGetUniformLocation(shaderProgram, "lightDir"),
       -0.5f, 1.0f, -0.3f
   );
 
-  // ===== TEXTURE =====
+  // ===== SHADOW MAP =====
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+
   glUniform1i(
-    glGetUniformLocation(shaderProgram, "useTexture"),
-    hasTexture ? 1 : 0
+      glGetUniformLocation(shaderProgram, "shadowMap"),
+      1
   );
 
-  if (hasTexture) {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+  // ===== TEXTURE FLAG =====
+  glUniform1i(
+      glGetUniformLocation(shaderProgram, "useTexture"),
+      hasTexture ? 1 : 0
+  );
 
-    glUniform1i(
-      glGetUniformLocation(shaderProgram, "texture1"),
-      0
-    );
+  if (hasTexture)
+  {
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, texture);
+
+      glUniform1i(
+          glGetUniformLocation(shaderProgram, "texture1"),
+          0
+      );
   }
 
+  // ===== COLOR =====
   glUniform3f(
       glGetUniformLocation(shaderProgram, "color"),
-      color.x, color.y, color.z    
+      color.x, color.y, color.z
   );
 
+  // ===== DRAW =====
   glBindVertexArray(VAO);
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 }

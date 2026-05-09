@@ -9,4 +9,6 @@ public:
   static Player* currentPlayer;
   static Player* oldCurrentPlayer;
   static void updatePlayer(GLFWwindow* window);
+
+  float health, maxHealth;
 };

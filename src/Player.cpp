@@ -7,7 +7,7 @@ Player* Player::oldCurrentPlayer = nullptr;
 bool changedPerspective = false;
 
 Player::Player(glm::vec3 position, bool isCurrentPlayer) 
-  : Mesh("models/Player.obj", glm::vec3(0.0f, 0.0f, 0.0f), position, glm::vec3(0.5f, 0.5f, 0.5f), false) { 
+  : Mesh("models/Player.obj", glm::vec3(0.0f, 0.0f, 0.0f), position, glm::vec3(0.5f, 0.5f, 0.5f), false), maxHealth(100), health(100) { 
   if (isCurrentPlayer) {
     currentPlayer = this;
   }

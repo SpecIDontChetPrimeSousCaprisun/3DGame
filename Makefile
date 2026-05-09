@@ -115,7 +115,7 @@ windows:
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
-	rm -f $(WIN_TARGET)
+	rm -rf publish
 
 publish:
 	rm -rf publish
@@ -137,7 +137,6 @@ publish:
 # Run Linux build
 # =======================
 test: all
-	cp $(TARGET) publish/linux
 	./$(TARGET)
 
 .PHONY: all clean test windows publish

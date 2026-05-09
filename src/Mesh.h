@@ -28,15 +28,20 @@ public:
 
   static std::vector<float> getVerticesFromFile(std::string path);
   static void calculateAllPhysics();
+  static void drawAllShadows();
   static void drawAllMeshes();
   static void initShader();
+
+  static glm::vec3 lightPos;
 
   glm::vec3 angularVelocity, linearVelocity, position, color;
   bool anchored;
 private:
   static glm::vec3 resolveAABB(Mesh* a, Mesh* b);
   static std::vector<Mesh*> meshes;
-  static unsigned int shaderProgram;
+  static unsigned int shaderProgram, shadowShaderProgram, depthMap, depthMapFBO;
+  static const unsigned int SHADOW_WIDTH, SHADOW_HEIGHT;
+  static glm::mat4 lightView, lightProjection, lightSpaceMatrix; 
 
   glm::vec3 colliderSize, colliderMin, colliderMax;
   unsigned int VAO, VBO, texture;
