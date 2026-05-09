@@ -310,7 +310,7 @@ glm::vec3 Mesh::resolveAABB(Mesh* a, Mesh* b) {
 void Mesh::calculatePhysics() {
   if (anchored) return;
   
-  linearVelocity -= glm::vec3(0.0f, 0.025f, 0.0f);
+  linearVelocity -= glm::vec3(0.0f, 25.0f, 0.0f) * (float)Window::deltaTime;
 
   glm::vec3 oldPos = position;
 
@@ -338,9 +338,6 @@ void Mesh::draw() {
 
   float time = (float)glfwGetTime();
 
-  int fbWidth, fbHeight;
-      glfwGetFramebufferSize(Window::window, &fbWidth, &fbHeight); 
-
   // ===== MODEL (object transform) =====
   glm::mat4 model = glm::mat4(1.0f);
 
@@ -363,7 +360,7 @@ void Mesh::draw() {
 
   glm::mat4 projection = glm::perspective(
       glm::radians(70.0f),
-      (float)fbWidth / fbHeight,
+      (float)Window::fbWidth / Window::fbHeight,
       0.1f,
       100.0f
   ); 

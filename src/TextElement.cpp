@@ -1,5 +1,6 @@
 #include "TextElement.h"
 #include "FileLoader.h"
+#include "Window.h"
 
 unsigned int TextElement::shaderProgram = 0;
 
@@ -156,12 +157,9 @@ void TextElement::afterDrawing() {
 
   glUseProgram(shaderProgram);
 
-  int w, h;
-  glfwGetFramebufferSize(glfwGetCurrentContext(), &w, &h);
-
   glm::mat4 projection = glm::ortho(
-      0.0f, (float)w,
-      (float)h, 0.0f,
+      0.0f, (float)Window::fbWidth,
+      (float)Window::fbHeight, 0.0f,
       -1.0f, 1.0f
   );
 

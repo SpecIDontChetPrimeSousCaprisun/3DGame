@@ -13,6 +13,7 @@ public:
   static GLFWwindow* window;
 
   static double deltaTime;
+  static int fbWidth, fbHeight;
 private:
   static TextElement* fpsText;
 };

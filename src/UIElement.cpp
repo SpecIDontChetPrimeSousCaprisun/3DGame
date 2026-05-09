@@ -1,5 +1,6 @@
 #include "UIElement.h"
 #include "FileLoader.h"
+#include "Window.h"
 
 unsigned int UIElement::shaderProgram = 0;
 std::vector<UIElement*> UIElement::elements;
@@ -236,17 +237,10 @@ void UIElement::draw() {
   );
 
   // ===== ORTHOGRAPHIC PROJECTION =====
-  int width, height;
-  glfwGetFramebufferSize(
-      glfwGetCurrentContext(),
-      &width,
-      &height
-  );
-
   glm::mat4 projection = glm::ortho(
       0.0f,
-      (float)width,
-      (float)height,
+      (float)Window::fbWidth,
+      (float)Window::fbHeight,
       0.0f,
       -1.0f,
       1.0f

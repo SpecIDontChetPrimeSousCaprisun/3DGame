@@ -12,9 +12,14 @@
 // REQUIRED definition (missing in your case)
 GLFWwindow* Window::window = nullptr;
 double Window::deltaTime = 0;
+int Window::fbWidth = 600;
+int Window::fbHeight = 480;
 
 double lastFrame = glfwGetTime();
 bool spawned = false;
+bool toggledLock = false;
+bool locked = true;
+bool resizing = false;
 TextElement* Window::fpsText = nullptr;
 
 int Window::init() {
@@ -29,7 +34,7 @@ int Window::init() {
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
 
   /* Create a windowed mode window and its OpenGL context */
-  window = glfwCreateWindow(640, 480, "Game", NULL, NULL);
+  window = glfwCreateWindow(fbWidth, fbHeight, "Game", NULL, NULL);
 
   if (!window)
   {
@@ -60,11 +65,17 @@ int Window::init() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glm::mat4 projection = glm::ortho(
-      0.0f, 640.0f,
-      480.0f, 0.0f,
+      0.0f, (float)fbWidth,
+      (float)fbHeight, 0.0f,
       -1.0f, 1.0f
   );
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+
+  glfwSetFramebufferSizeCallback(window,
+  [](GLFWwindow*, int width, int height)
+  {
+      resizing = (width == 0 || height == 0);
+  });
 
   return 0;
 }
@@ -73,11 +84,21 @@ void Window::mainLoop() {
   fpsText =  new TextElement(glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 50.0f), 0.5f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), "FPS : 60", "fonts/Kenney Future Narrow.ttf", 1);
 
   while (!glfwWindowShouldClose(window)){
+    if (resizing) {
+      glfwPollEvents();
+      glfwSwapBuffers(window);
+      return;
+    }
+
     glfwPollEvents();
 
     double currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+
+    if (deltaTime > 0.1) {
+      deltaTime = 0.1;
+    }
 
     double fps = 1.0 / deltaTime;
 
@@ -87,8 +108,12 @@ void Window::mainLoop() {
 
     fpsText->text = "FPS : " + fpsString;
 
-    int fbWidth, fbHeight;
     glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
+    if (fbWidth == 0 || fbHeight == 0) {
+      glfwSwapBuffers(window);
+      continue;
+    }
 
     glViewport(0, 0, fbWidth, fbHeight);
 
@@ -96,9 +121,23 @@ void Window::mainLoop() {
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !spawned) {
       spawned = true;
-      new Mesh("models/Box.obj", "textures/Texture.jpg", glm::vec3(0.0f, 0.0f, 0.0f), Camera::position + (Camera::forward * 2.0f), false);
+      new Mesh("models/Box.obj", "textures/Texture.jpg", glm::vec3(0.0f, 0.0f, 0.0f), Camera::position + (Camera::forward * 5.0f), false);
     } else if (glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS ) {
       spawned = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && !toggledLock) {
+      if (locked) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        locked = false;
+      } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        locked = true;
+      }
+
+      toggledLock = true;
+    } else if (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
+      toggledLock = false;
     }
 
     Mesh::calculateAllPhysics();
