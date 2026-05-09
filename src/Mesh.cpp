@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "Light.h"
 
 std::vector<Mesh*> Mesh::meshes;
 unsigned int Mesh::shaderProgram, Mesh::shadowShaderProgram, Mesh::depthMap, Mesh::depthMapFBO = 0;
@@ -631,11 +632,24 @@ void Mesh::draw() {
   );
 
   // ===== LIGHT =====
-  glUniform3f(
-      glGetUniformLocation(shaderProgram, "lightDir"),
-      -0.5f, 1.0f, -0.3f
-  );
+  glUniform1i(glGetUniformLocation(shaderProgram, "lightCount"), Light::lights.size());
 
+  for (int i = 0; i < Light::lights.size(); i++) {
+    if (!Light::lights[i]->enabled) continue;
+
+    glUniform3f(glGetUniformLocation(shaderProgram, ("lightPos[" + std::to_string(i) + "]").c_str()),
+        Light::lights[i]->position.x,
+        Light::lights[i]->position.y,
+        Light::lights[i]->position.z
+    );
+
+    glUniform3f(glGetUniformLocation(shaderProgram, ("lightColor[" + std::to_string(i) + "]").c_str()),
+        Light::lights[i]->color.x,
+        Light::lights[i]->color.y,
+        Light::lights[i]->color.z
+    );
+  }
+  
   // ===== SHADOW MAP =====
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, depthMap);

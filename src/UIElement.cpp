@@ -3,21 +3,23 @@
 #include "Window.h"
 
 unsigned int UIElement::shaderProgram = 0;
-std::vector<UIElement*> UIElement::elements;
+std::map<int, std::vector<UIElement*>> UIElement::elements;
 
 void UIElement::drawAllElements() {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 
-  for (UIElement* element : elements) {
-    element->draw();
+  for (auto& [Index, elementsVector] : elements) {
+    for (UIElement* element : elementsVector) {
+      element->draw();
+    }
   }
 
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
 
-void UIElement::init() {
+void UIElement::init() { 
   float vertices[] = {
       // positions   // UVs
       0.0f, 0.0f,    0.0f, 0.0f,
@@ -68,16 +70,16 @@ void UIElement::init() {
   glBindVertexArray(0);
 
   visible = true;
-  elements.push_back(this);
+  elements[zIndex].push_back(this);
 }
 
-UIElement::UIElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color)
-: position(position), size(size), backgroundTransparency(backgroundTransparency), color(color), rotation(0.0f), hasTexture(false) {
+UIElement::UIElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color, int zIndex)
+: position(position), size(size), backgroundTransparency(backgroundTransparency), color(color), rotation(0.0f), hasTexture(false), zIndex(zIndex) {
   init();
 }
 
-UIElement::UIElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath)
-: position(position), size(size), backgroundTransparency(backgroundTransparency), texture(FileLoader::loadTexture(texPath)), rotation(0.0f), hasTexture(true) {
+UIElement::UIElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath, int zIndex)
+: position(position), size(size), backgroundTransparency(backgroundTransparency), texture(FileLoader::loadTexture(texPath)), rotation(0.0f), hasTexture(true), zIndex(zIndex) {
   init();
 }
 

@@ -10,8 +10,8 @@
 
 class TextElement : public UIElement {
 public:
-  TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color, glm::vec3 textColor, std::string text, std::string fontPath, float scale);
-  TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath, glm::vec3 textColor, std::string text, std::string fontPath, float scale);
+  TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color, glm::vec3 textColor, std::string text, std::string fontPath, float scale, int zIndex);
+  TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath, glm::vec3 textColor, std::string text, std::string fontPath, float scale, int zIndex);
 
   static void initShader();
 

@@ -28,6 +28,7 @@ src/Player.cpp \
 src/UIElement.cpp \
 src/TextElement.cpp \
 src/Font.cpp \
+src/Light.cpp \
 src/glad.c
 
 PUBLISH_SRC = textures \

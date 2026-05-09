@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Player.h"
 #include "UIElement.h"
+#include "Light.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -81,7 +82,9 @@ int Window::init() {
 }
 
 void Window::mainLoop() {
-  fpsText =  new TextElement(glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 50.0f), 0.5f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), "FPS : 60", "fonts/Kenney Future Narrow.ttf", 1);
+  fpsText = new TextElement(glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 50.0f), 0.5f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), "FPS : 60", "fonts/Kenney Future Narrow.ttf", 1, 1);
+  Light* light = new Light("models/Ball.obj", glm::vec3(0.0f, 0.0f, 0.0f), Mesh::lightPos, glm::vec3(1.0f, 1.0f, 0.25f), true, 0.0f);
+  light->enabled = false;
 
   while (!glfwWindowShouldClose(window)){
     if (resizing) {
@@ -124,6 +127,12 @@ void Window::mainLoop() {
       new Mesh("models/Box.obj", "textures/Texture.jpg", glm::vec3(0.0f, 0.0f, 0.0f), Camera::position + (Camera::forward * 5.0f), false);
     } else if (glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS ) {
       spawned = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+      light->position = Camera::position + (Camera::forward * 5.0f);
+      light->intensity = 1.0f;
+      light->enabled = true;
     }
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && !toggledLock) {

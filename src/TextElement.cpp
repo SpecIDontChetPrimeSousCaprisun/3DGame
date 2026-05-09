@@ -24,13 +24,13 @@ void TextElement::init() {
   glBindVertexArray(0);
 }
 
-TextElement::TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color, glm::vec3 textColor, std::string text, std::string fontPath, float scale) 
-  : UIElement(position, size, backgroundTransparency, color), text(text), font(new Font(fontPath, size.y)), scale(scale), textColor(textColor) {
+TextElement::TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, glm::vec3 color, glm::vec3 textColor, std::string text, std::string fontPath, float scale, int zIndex) 
+  : UIElement(position, size, backgroundTransparency, color, zIndex), text(text), font(new Font(fontPath, size.y)), scale(scale), textColor(textColor) {
   init();
 }
 
-TextElement::TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath, glm::vec3 textColor, std::string text, std::string fontPath, float scale)
-  : UIElement(position, size, backgroundTransparency, texPath), text(text), font(new Font(fontPath, size.y)), scale(scale), textColor(textColor) {
+TextElement::TextElement(glm::vec2 position, glm::vec2 size, float backgroundTransparency, std::string texPath, glm::vec3 textColor, std::string text, std::string fontPath, float scale, int zIndex)
+  : UIElement(position, size, backgroundTransparency, texPath, zIndex), text(text), font(new Font(fontPath, size.y)), scale(scale), textColor(textColor) {
   init();
 }
 
